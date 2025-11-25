@@ -30,11 +30,7 @@ body.theme-nutrition { background: #f4fbf7; }
 .hidden { display: none !important; }
 
 .app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  text-align: center;
   padding: 28px 16px 12px;
 }
 
@@ -58,10 +54,7 @@ body.theme-nutrition { background: #f4fbf7; }
   border-radius: 14px;
   padding: 18px;
   box-shadow: var(--shadow);
-  text-align: center;
 }
-
-#auth-container h2 { margin: 0 0 6px; }
 
 .auth-grid {
   display: grid;
@@ -80,10 +73,6 @@ body.theme-nutrition { background: #f4fbf7; }
 .auth-actions button { flex: 1 1 150px; }
 
 #auth-message.error { color: var(--danger); }
-
-.status-line {
-  margin-top: 6px;
-}
 
 .tabs {
   display: flex;
@@ -177,10 +166,6 @@ body.theme-nutrition { background: #f4fbf7; }
   margin-bottom: 12px;
 }
 
-.form-grid.compact {
-  margin-bottom: 8px;
-}
-
 label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: var(--text); }
 input, select, textarea {
   padding: 10px;
@@ -269,78 +254,4 @@ textarea { resize: vertical; }
 @media (max-width: 640px) {
   .section-header { flex-direction: column; align-items: flex-start; }
   .auth-actions { flex-direction: column; }
-}
-
-/* Additional styles for objectives, feedback, journal, and item actions */
-.badge.neutral { background: rgba(45, 156, 219, 0.12); color: var(--text); }
-
-.feedback-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.feedback-list li {
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-}
-
-.journal-list {
-  display: grid;
-  gap: 12px;
-}
-
-.journal-day {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: #fdfefe;
-}
-
-.journal-day h4 {
-  margin: 0 0 6px;
-}
-
-.journal-entries {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.entry-sport { color: var(--primary); }
-.entry-meal { color: var(--secondary); }
-
-.list-item header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.item-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.item-actions button {
-  border: 1px solid var(--border);
-  background: #f8fafc;
-  color: var(--text);
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.item-actions button.delete { color: var(--danger); }
-
-.full {
-  width: 100%;
-  margin-top: 8px;
 }
