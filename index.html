@@ -14,23 +14,27 @@
 </head>
 <body class="theme-dashboard">
   <header class="app-header">
-    <div>
-      <h1>Projet Argentine – Sport &amp; Nutrition</h1>
-      <p class="subtitle hidden">Ton tableau de bord pour arriver en Argentine dans la meilleure forme possible.</p>
-    </div>
-    <button id="logout-btn" class="ghost" style="display: none;">Se déconnecter</button>
+    <h1>Projet Argentine – Sport &amp; Nutrition</h1>
+    <p class="subtitle">Ton tableau de bord pour arriver en Argentine dans la meilleure forme possible.</p>
   </header>
 
-  <section id="auth-container" class="auth-card">
-    <h2>Connexion</h2>
+  <section id="auth-section" class="auth-card">
+    <h2>Bienvenue</h2>
     <p class="comment">Connecte-toi ou crée un compte pour synchroniser tes données entre tes appareils.</p>
     <div class="auth-grid">
-      <input id="auth-email" type="email" placeholder="Email" autocomplete="email" />
-      <input id="auth-password" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+      <label>
+        Email
+        <input type="email" id="auth-email" autocomplete="email" placeholder="ton.email@example.com">
+      </label>
+      <label>
+        Mot de passe
+        <input type="password" id="auth-password" autocomplete="current-password" placeholder="••••••••">
+      </label>
     </div>
     <div class="auth-actions">
-      <button id="auth-login" class="primary">Se connecter</button>
-      <button id="auth-register" class="secondary">Créer un compte</button>
+      <button id="signup-btn" class="secondary">Sign up / Register</button>
+      <button id="login-btn" class="primary">Log in</button>
+      <button id="logout-btn" class="ghost" disabled>Log out</button>
     </div>
     <p id="auth-message" class="comment"></p>
   </section>
@@ -48,8 +52,6 @@
           <div class="card" id="sport-summary-card">
             <h2>Sport - Semaine en cours</h2>
             <p class="stat" id="sport-summary-text">0 séance · 0 min · Charge 0</p>
-            <div class="status-line"><span class="badge neutral" id="sport-session-status">Statut</span></div>
-            <div class="status-line"><span class="badge neutral" id="sport-minutes-status">Statut</span></div>
           </div>
           <div class="card" id="shoulder-card">
             <h2>Épaule</h2>
@@ -59,28 +61,8 @@
           <div class="card" id="nutrition-card">
             <h2>Nutrition - Moyenne hebdo</h2>
             <p class="stat" id="nutrition-text">0 / 5</p>
-            <div class="status-line"><span class="badge neutral" id="nutrition-status">Statut</span></div>
+            <p class="comment">Objectif &gt; 3,5</p>
           </div>
-
-          <div class="card" id="objectives-card">
-            <h2>Objectifs hebdo</h2>
-            <div class="form-grid compact">
-              <label>
-                Séances
-                <input type="number" id="obj-sessions" min="0" step="1" />
-              </label>
-              <label>
-                Minutes
-                <input type="number" id="obj-minutes" min="0" step="10" />
-              </label>
-              <label>
-                Nutrition (moyenne)
-                <input type="number" id="obj-nutrition" min="0" max="5" step="0.1" />
-              </label>
-            </div>
-            <button id="save-objectives" class="primary full">Enregistrer les objectifs</button>
-          </div>
-        </div>
         </div>
 
         <div class="charts-grid">
@@ -91,17 +73,6 @@
           <div class="card">
             <h3>Qualité nutrition (7 derniers jours)</h3>
             <canvas id="nutritionChart" height="140"></canvas>
-          </div>
-        </div>
-
-        <div class="cards-grid">
-          <div class="card" id="feedback-card">
-            <h3>Messages de la semaine</h3>
-            <ul id="feedback-list" class="feedback-list"></ul>
-          </div>
-          <div class="card" id="journal-card">
-            <h3>Journal (14 derniers jours)</h3>
-            <div id="journal-list" class="journal-list"></div>
           </div>
         </div>
       </section>
@@ -202,7 +173,7 @@
     </main>
   </div>
 
-  <footer class="app-footer hidden">
+  <footer class="app-footer">
     <p>Synchronisation sécurisée via Supabase · Front-end HTML/CSS/JS</p>
   </footer>
 
