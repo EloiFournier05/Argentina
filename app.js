@@ -9,11 +9,6 @@ const state = {
 
 let sportChart = null;
 let nutritionChart = null;
-const THEMES = {
-  dashboard: 'theme-dashboard',
-  sport: 'theme-sport',
-  nutrition: 'theme-nutrition'
-};
 
 // ---------- Storage helpers ----------
 function loadState() {
@@ -205,7 +200,7 @@ function renderMealList() {
     item.className = 'list-item';
     item.innerHTML = `
       <header>
-        <span>${formatDate(meal.dateTime)} · ${meal.typeRepas}</span>
+        <span>${formatDateTime(meal.dateTime)} · ${meal.typeRepas}</span>
         <span class="badge ${meal.noteQualite >= 4 ? 'ok' : meal.noteQualite >= 2 ? 'warn' : 'danger'}">${meal.noteQualite}/5</span>
       </header>
       ${meal.commentaire ? `<div>${meal.commentaire}</div>` : '<div class="meta">Sans commentaire</div>'}
@@ -282,15 +277,8 @@ function setupTabs() {
 
       btn.classList.add('active');
       document.getElementById(tab).classList.add('active');
-      applyTheme(tab);
     });
   });
-}
-
-function applyTheme(tab) {
-  document.body.classList.remove(...Object.values(THEMES));
-  const themeClass = THEMES[tab];
-  if (themeClass) document.body.classList.add(themeClass);
 }
 
 // ---------- Forms ----------
@@ -357,7 +345,6 @@ function init() {
   loadState();
   setupTabs();
   setupForms();
-  applyTheme('dashboard');
   renderAll();
 }
 

@@ -16,15 +16,11 @@
 
 body {
   margin: 0;
-  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #0b1836 0%, #102a5c 100%);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #0b1222 0%, #0f172a 100%);
   color: var(--text);
   min-height: 100vh;
 }
-
-body.theme-dashboard { background: linear-gradient(135deg, #0b1836 0%, #102a5c 100%); }
-body.theme-sport { background: linear-gradient(135deg, #3f1010 0%, #b91c1c 100%); }
-body.theme-nutrition { background: linear-gradient(135deg, #0f3d2e 0%, #16a34a 100%); }
 
 .app-header {
   text-align: center;
