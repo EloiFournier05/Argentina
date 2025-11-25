@@ -46,18 +46,11 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const TYPES_SPORT = ['natation', 'kine', 'maison', 'running', 'foot', 'padel', 'autre'];
 const TYPES_REPAS = ['petit_dej', 'dejeuner', 'diner', 'snack'];
-const DEFAULT_OBJECTIVES = {
-  weeklySessionsTarget: 4,
-  weeklyMinutesTarget: 200,
-  weeklyNutritionTarget: 3.5,
-};
-const OBJECTIVES_STORAGE_KEY = 'argentine_objectives';
 
 const state = {
   currentUser: null,
   sportSessions: [],
   meals: [],
-  objectives: { ...DEFAULT_OBJECTIVES },
 };
 
 let sportChart = null;
@@ -69,49 +62,23 @@ const THEMES = {
 };
 
 // ---------- Auth helpers ----------
-function showAuthMessage(message, isError = false) {
-  const msgEl = document.getElementById('auth-message');
-  msgEl.textContent = message || '';
-  msgEl.classList.toggle('error', !!isError);
+async function handleAuthState() {
+  // Vérifie s'il existe déjà une session (par exemple, après un refresh)
+  const { data } = await supabase.auth.getSession();
+  const existingUser = data?.session?.user || null;
+  await updateUser(existingUser);
+
+  // Écoute les changements (login / logout)
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    const user = session?.user || null;
+    await updateUser(user);
+  });
 }
 
-async function signUp(email, password) {
-  return supabase.auth.signUp({ email, password });
-}
-
-async function signIn(email, password) {
-  return supabase.auth.signInWithPassword({ email, password });
-}
-
-async function signOut() {
-  await supabase.auth.signOut();
-}
-
-function toggleVisibility(isLoggedIn) {
-  const appShell = document.getElementById('app-shell');
-  const authContainer = document.getElementById('auth-container');
-  const footer = document.querySelector('.app-footer');
-  const subtitle = document.querySelector('.subtitle');
-  const logoutBtn = document.getElementById('logout-btn');
-
-  if (isLoggedIn) {
-    appShell.classList.remove('hidden');
-    authContainer.classList.add('hidden');
-    footer.classList.remove('hidden');
-    subtitle?.classList.remove('hidden');
-    logoutBtn.style.display = 'inline-flex';
-  } else {
-    appShell.classList.add('hidden');
-    authContainer.classList.remove('hidden');
-    footer.classList.add('hidden');
-    subtitle?.classList.add('hidden');
-    logoutBtn.style.display = 'none';
-  }
-}
-
-async function applySession(user) {
+async function updateUser(user) {
   state.currentUser = user;
-  toggleVisibility(!!user);
+  toggleAppVisibility(!!user);
+  toggleAuthButtons(!!user);
   if (user) {
     showAuthMessage(`Connecté en tant que ${user.email}`);
     await fetchAllData();
@@ -123,27 +90,35 @@ async function applySession(user) {
   }
 }
 
-async function checkSessionOnLoad() {
-  const { data } = await supabase.auth.getSession();
-  await applySession(data?.session?.user || null);
+function toggleAppVisibility(isLoggedIn) {
+  document.getElementById('app-shell').classList.toggle('hidden', !isLoggedIn);
+  document.getElementById('auth-section').classList.toggle('hidden', isLoggedIn);
+  document.querySelector('.app-footer').classList.toggle('hidden', !isLoggedIn);
+}
 
-  supabase.auth.onAuthStateChange(async (_event, session) => {
-    await applySession(session?.user || null);
-  });
+function toggleAuthButtons(isLoggedIn) {
+  document.getElementById('logout-btn').disabled = !isLoggedIn;
+  document.getElementById('login-btn').disabled = isLoggedIn;
+  document.getElementById('signup-btn').disabled = isLoggedIn;
+}
+
+function showAuthMessage(message, isError = false) {
+  const msgEl = document.getElementById('auth-message');
+  msgEl.textContent = message || '';
+  msgEl.classList.toggle('error', !!isError);
 }
 
 function setupAuthUI() {
   const emailEl = document.getElementById('auth-email');
   const passwordEl = document.getElementById('auth-password');
-
-  document.getElementById('auth-register').addEventListener('click', async () => {
+  document.getElementById('signup-btn').addEventListener('click', async () => {
     const email = emailEl.value.trim();
     const password = passwordEl.value.trim();
     if (!email || !password) {
       showAuthMessage('Email et mot de passe requis.', true);
       return;
     }
-    const { error } = await signUp(email, password);
+    const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
       showAuthMessage(error.message, true);
       return;
@@ -151,46 +126,25 @@ function setupAuthUI() {
     showAuthMessage('Compte créé. Vérifie ta boîte mail si la confirmation est activée.');
   });
 
-  document.getElementById('auth-login').addEventListener('click', async () => {
+  document.getElementById('login-btn').addEventListener('click', async () => {
     const email = emailEl.value.trim();
     const password = passwordEl.value.trim();
     if (!email || !password) {
       showAuthMessage('Email et mot de passe requis.', true);
       return;
     }
-    const { data, error } = await signIn(email, password);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       showAuthMessage(error.message, true);
       return;
     }
     showAuthMessage('Connexion réussie.');
-    if (data?.session?.user) {
-      await applySession(data.session.user);
-    }
   });
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
-    await signOut();
+    await supabase.auth.signOut();
     showAuthMessage('Déconnecté.');
   });
-}
-
-// ---------- Objectives (localStorage) ----------
-function loadObjectivesFromStorage() {
-  try {
-    const raw = localStorage.getItem(OBJECTIVES_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      state.objectives = { ...DEFAULT_OBJECTIVES, ...parsed };
-    }
-  } catch (e) {
-    console.warn('Impossible de charger les objectifs', e);
-    state.objectives = { ...DEFAULT_OBJECTIVES };
-  }
-}
-
-function saveObjectivesToStorage() {
-  localStorage.setItem(OBJECTIVES_STORAGE_KEY, JSON.stringify(state.objectives));
 }
 
 // ---------- Data fetching ----------
@@ -292,76 +246,6 @@ async function insertMeal(meal) {
     noteQualite: data.note_qualite,
     commentaire: data.commentaire || '',
   };
-}
-
-async function updateSportSession(id, updates) {
-  const { data, error } = await supabase
-    .from('sport_sessions')
-    .update({
-      date: updates.date,
-      type: updates.type,
-      duree_minutes: updates.dureeMinutes,
-      intensite: updates.intensite,
-      epaule: updates.epaule,
-      commentaire: updates.commentaire?.trim() || null,
-    })
-    .eq('id', id)
-    .eq('user_id', state.currentUser.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return {
-    id: data.id,
-    date: data.date,
-    type: data.type,
-    dureeMinutes: data.duree_minutes,
-    intensite: data.intensite,
-    epaule: data.epaule,
-    commentaire: data.commentaire || '',
-  };
-}
-
-async function deleteSportSession(id) {
-  const { error } = await supabase
-    .from('sport_sessions')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', state.currentUser.id);
-  if (error) throw error;
-}
-
-async function updateMeal(id, updates) {
-  const { data, error } = await supabase
-    .from('meals')
-    .update({
-      datetime: updates.dateTime,
-      type_repas: updates.typeRepas,
-      note_qualite: updates.noteQualite,
-      commentaire: updates.commentaire?.trim() || null,
-    })
-    .eq('id', id)
-    .eq('user_id', state.currentUser.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return {
-    id: data.id,
-    dateTime: data.datetime,
-    typeRepas: data.type_repas,
-    noteQualite: data.note_qualite,
-    commentaire: data.commentaire || '',
-  };
-}
-
-async function deleteMeal(id) {
-  const { error } = await supabase
-    .from('meals')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', state.currentUser.id);
-  if (error) throw error;
 }
 
 // ---------- Date helpers ----------
@@ -471,50 +355,10 @@ function nutritionDailyAveragesLast7Days() {
   return days;
 }
 
-function setStatusBadge(id, status) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = status.text;
-  el.className = `badge ${status.className}`;
-}
-
-function getObjectiveStatus(actual, target, labels = {}) {
-  const { reached = 'Objectif atteint', onTrack = 'On track', late = 'En retard' } = labels;
-  if (!target || target <= 0) return { text: 'Pas d\'objectif', className: 'neutral' };
-  const ratio = actual / target;
-  if (ratio >= 1) return { text: reached, className: 'ok' };
-  if (ratio >= 0.7) return { text: onTrack, className: 'warn' };
-  return { text: late, className: 'danger' };
-}
-
-function generateFeedbackMessages(sportStats, nutritionStats, objectives) {
-  const messages = [];
-  if (sportStats.weeklySessions.length >= objectives.weeklySessionsTarget) {
-    messages.push('Super ! Tu as atteint ton objectif de séances cette semaine.');
-  } else {
-    messages.push('Continue à planifier tes séances pour atteindre ton objectif.');
-  }
-
-  if (sportStats.shoulderPct > 30) {
-    messages.push('Ton épaule a été sensible plusieurs fois cette semaine, pense à adapter l’intensité.');
-  } else if (sportStats.shoulderPct > 10) {
-    messages.push('Épaule : reste attentif aux sensations, échauffement soigné.');
-  }
-
-  if (nutritionStats.weeklyAverage >= objectives.weeklyNutritionTarget) {
-    messages.push('Nutrition cohérente cette semaine, continue comme ça.');
-  } else {
-    messages.push('Essaie d’améliorer la qualité moyenne de tes repas pour atteindre ton objectif.');
-  }
-
-  return messages.slice(0, 3);
-}
-
 // ---------- Rendering ----------
 function updateDashboard() {
   const sportStats = computeSportWeeklyStats();
   const nutritionStats = computeNutritionStats();
-  const objectives = state.objectives;
 
   const summaryText = `${sportStats.weeklySessions.length} séance${sportStats.weeklySessions.length > 1 ? 's' : ''} · ${sportStats.totalMinutes} min · Charge ${sportStats.totalLoad}`;
   document.getElementById('sport-summary-text').textContent = summaryText;
@@ -530,171 +374,6 @@ function updateDashboard() {
 
   const nutritionText = `${nutritionStats.weeklyAverage.toFixed(1)} / 5`;
   document.getElementById('nutrition-text').textContent = nutritionText;
-
-  setStatusBadge('sport-session-status', getObjectiveStatus(
-    sportStats.weeklySessions.length,
-    objectives.weeklySessionsTarget,
-    { reached: 'Objectif atteint', onTrack: 'On track', late: 'En retard' }
-  ));
-  setStatusBadge('sport-minutes-status', getObjectiveStatus(
-    sportStats.totalMinutes,
-    objectives.weeklyMinutesTarget,
-    { reached: 'En avance', onTrack: 'On track', late: 'En retard' }
-  ));
-  setStatusBadge('nutrition-status', getObjectiveStatus(
-    nutritionStats.weeklyAverage,
-    objectives.weeklyNutritionTarget,
-    { reached: 'Objectif atteint', onTrack: 'On track', late: 'En retard' }
-  ));
-}
-
-async function handleEditSport(id) {
-  const session = state.sportSessions.find((s) => s.id === id);
-  if (!session) return;
-  const date = prompt('Date (YYYY-MM-DD)', session.date) || session.date;
-  const type = prompt('Type', session.type) || session.type;
-  const dureeMinutes = parseInt(prompt('Durée (minutes)', session.dureeMinutes) || session.dureeMinutes, 10);
-  const intensite = parseInt(prompt('Intensité (1-5)', session.intensite) || session.intensite, 10);
-  const epaule = prompt('Épaule (OK/gene/douleur)', session.epaule) || session.epaule;
-  const commentaire = prompt('Commentaire', session.commentaire) || '';
-
-  try {
-    const updated = await updateSportSession(id, { date, type, dureeMinutes, intensite, epaule, commentaire });
-    state.sportSessions = state.sportSessions.map((s) => (s.id === id ? updated : s));
-    renderAll();
-  } catch (e) {
-    alert('Modification impossible.');
-    console.error(e);
-  }
-}
-
-async function handleDeleteSport(id) {
-  if (!confirm('Supprimer cette séance ?')) return;
-  try {
-    await deleteSportSession(id);
-    state.sportSessions = state.sportSessions.filter((s) => s.id !== id);
-    renderAll();
-  } catch (e) {
-    alert('Suppression impossible.');
-    console.error(e);
-  }
-}
-
-async function handleEditMeal(id) {
-  const meal = state.meals.find((m) => m.id === id);
-  if (!meal) return;
-  const localDate = new Date(meal.dateTime);
-  const defaultDt = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
-  const dateTimeInput = prompt('Date & heure (YYYY-MM-DDTHH:mm)', defaultDt) || defaultDt;
-  const typeRepas = prompt('Type de repas', meal.typeRepas) || meal.typeRepas;
-  const noteQualite = parseInt(prompt('Note (1-5)', meal.noteQualite) || meal.noteQualite, 10);
-  const commentaire = prompt('Commentaire', meal.commentaire) || '';
-
-  try {
-    const updated = await updateMeal(id, {
-      dateTime: new Date(dateTimeInput).toISOString(),
-      typeRepas,
-      noteQualite,
-      commentaire,
-    });
-    state.meals = state.meals.map((m) => (m.id === id ? updated : m));
-    renderAll();
-  } catch (e) {
-    alert('Modification impossible.');
-    console.error(e);
-  }
-}
-
-async function handleDeleteMeal(id) {
-  if (!confirm('Supprimer ce repas ?')) return;
-  try {
-    await deleteMeal(id);
-    state.meals = state.meals.filter((m) => m.id !== id);
-    renderAll();
-  } catch (e) {
-    alert('Suppression impossible.');
-    console.error(e);
-  }
-}
-
-function renderObjectivesCard() {
-  const { weeklySessionsTarget, weeklyMinutesTarget, weeklyNutritionTarget } = state.objectives;
-  document.getElementById('obj-sessions').value = weeklySessionsTarget;
-  document.getElementById('obj-minutes').value = weeklyMinutesTarget;
-  document.getElementById('obj-nutrition').value = weeklyNutritionTarget;
-}
-
-function renderFeedbackMessages() {
-  const feedbackList = document.getElementById('feedback-list');
-  const sportStats = computeSportWeeklyStats();
-  const nutritionStats = computeNutritionStats();
-  const messages = generateFeedbackMessages(sportStats, nutritionStats, state.objectives);
-
-  feedbackList.innerHTML = '';
-  if (!messages.length) {
-    feedbackList.innerHTML = '<li class="comment">Pas encore de messages.</li>';
-    return;
-  }
-  messages.forEach(msg => {
-    const li = document.createElement('li');
-    li.textContent = msg;
-    feedbackList.appendChild(li);
-  });
-}
-
-function renderJournal() {
-  const journalEl = document.getElementById('journal-list');
-  const entriesByDate = {};
-
-  state.sportSessions.forEach((s) => {
-    const key = s.date;
-    if (!entriesByDate[key]) entriesByDate[key] = [];
-    entriesByDate[key].push({
-      type: 'sport',
-      text: `${s.type} ${s.dureeMinutes} min (intensité ${s.intensite}, épaule ${s.epaule})${s.commentaire ? ` - ${s.commentaire}` : ''}`,
-    });
-  });
-
-  state.meals.forEach((m) => {
-    const key = m.dateTime.split('T')[0];
-    if (!entriesByDate[key]) entriesByDate[key] = [];
-    entriesByDate[key].push({
-      type: 'meal',
-      text: `${m.typeRepas} ${m.noteQualite}/5${m.commentaire ? ` - ${m.commentaire}` : ''}`,
-    });
-  });
-
-  const days = Object.keys(entriesByDate)
-    .sort((a, b) => new Date(b) - new Date(a))
-    .slice(0, 14);
-
-  journalEl.innerHTML = '';
-  if (!days.length) {
-    journalEl.innerHTML = '<p class="comment">Aucune donnée récente.</p>';
-    return;
-  }
-
-  days.forEach((day) => {
-    const block = document.createElement('div');
-    block.className = 'journal-day';
-    const title = document.createElement('h4');
-    title.textContent = formatDate(day);
-    block.appendChild(title);
-
-    const ul = document.createElement('ul');
-    ul.className = 'journal-entries';
-    entriesByDate[day].forEach((entry) => {
-      const li = document.createElement('li');
-      li.className = entry.type === 'sport' ? 'entry-sport' : 'entry-meal';
-      li.textContent = `${entry.type === 'sport' ? 'Sport: ' : 'Repas: '}${entry.text}`;
-      ul.appendChild(li);
-    });
-
-    block.appendChild(ul);
-    journalEl.appendChild(block);
-  });
 }
 
 function renderSportList() {
@@ -720,18 +399,6 @@ function renderSportList() {
       <div class="meta">${session.dureeMinutes} min · Intensité ${session.intensite}</div>
       ${session.commentaire ? `<div>${session.commentaire}</div>` : ''}
     `;
-    const actions = document.createElement('div');
-    actions.className = 'item-actions';
-    const editBtn = document.createElement('button');
-    editBtn.textContent = 'Modifier';
-    editBtn.addEventListener('click', () => handleEditSport(session.id));
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Supprimer';
-    deleteBtn.classList.add('delete');
-    deleteBtn.addEventListener('click', () => handleDeleteSport(session.id));
-    actions.appendChild(editBtn);
-    actions.appendChild(deleteBtn);
-    item.appendChild(actions);
     listEl.appendChild(item);
   });
 
@@ -760,18 +427,6 @@ function renderMealList() {
       </header>
       ${meal.commentaire ? `<div>${meal.commentaire}</div>` : '<div class="meta">Sans commentaire</div>'}
     `;
-    const actions = document.createElement('div');
-    actions.className = 'item-actions';
-    const editBtn = document.createElement('button');
-    editBtn.textContent = 'Modifier';
-    editBtn.addEventListener('click', () => handleEditMeal(meal.id));
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Supprimer';
-    deleteBtn.classList.add('delete');
-    deleteBtn.addEventListener('click', () => handleDeleteMeal(meal.id));
-    actions.appendChild(editBtn);
-    actions.appendChild(deleteBtn);
-    item.appendChild(actions);
     listEl.appendChild(item);
   });
 
@@ -829,9 +484,6 @@ function renderCharts() {
 function renderAll() {
   if (!state.currentUser) return;
   updateDashboard();
-  renderObjectivesCard();
-  renderFeedbackMessages();
-  renderJournal();
   renderSportList();
   renderMealList();
   renderCharts();
@@ -938,32 +590,13 @@ function setupForms() {
   });
 }
 
-function setupObjectivesForm() {
-  const saveBtn = document.getElementById('save-objectives');
-  saveBtn.addEventListener('click', () => {
-    const sessions = parseInt(document.getElementById('obj-sessions').value, 10) || 0;
-    const minutes = parseInt(document.getElementById('obj-minutes').value, 10) || 0;
-    const nutrition = parseFloat(document.getElementById('obj-nutrition').value) || 0;
-
-    state.objectives = {
-      weeklySessionsTarget: sessions,
-      weeklyMinutesTarget: minutes,
-      weeklyNutritionTarget: nutrition,
-    };
-    saveObjectivesToStorage();
-    renderAll();
-  });
-}
-
 // ---------- Init ----------
 async function init() {
   applyTheme('dashboard');
-  loadObjectivesFromStorage();
   setupTabs();
   setupForms();
-  setupObjectivesForm();
   setupAuthUI();
-  await checkSessionOnLoad();
+  await handleAuthState();
 }
 
 document.addEventListener('DOMContentLoaded', init);
