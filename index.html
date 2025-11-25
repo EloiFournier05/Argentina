@@ -9,172 +9,147 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Supabase client v2 via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="theme-dashboard">
+<body>
   <header class="app-header">
     <h1>Projet Argentine – Sport &amp; Nutrition</h1>
-    <p class="subtitle">Ton tableau de bord pour arriver en Argentine dans la meilleure forme possible.</p>
+    <p class="subtitle">Suivi simple de tes séances et de tes repas</p>
   </header>
 
-  <section id="auth-section" class="auth-card">
-    <h2>Bienvenue</h2>
-    <p class="comment">Connecte-toi ou crée un compte pour synchroniser tes données entre tes appareils.</p>
-    <div class="auth-grid">
-      <label>
-        Email
-        <input type="email" id="auth-email" autocomplete="email" placeholder="ton.email@example.com">
-      </label>
-      <label>
-        Mot de passe
-        <input type="password" id="auth-password" autocomplete="current-password" placeholder="••••••••">
-      </label>
-    </div>
-    <div class="auth-actions">
-      <button id="signup-btn" class="secondary">Sign up / Register</button>
-      <button id="login-btn" class="primary">Log in</button>
-      <button id="logout-btn" class="ghost" disabled>Log out</button>
-    </div>
-    <p id="auth-message" class="comment"></p>
-  </section>
+  <nav class="tabs">
+    <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+    <button class="tab-button" data-tab="sport">Sport</button>
+    <button class="tab-button" data-tab="nutrition">Nutrition</button>
+  </nav>
 
-  <div id="app-shell" class="hidden">
-    <nav class="tabs">
-      <button class="tab-button active" data-tab="dashboard">Dashboard</button>
-      <button class="tab-button" data-tab="sport">Sport</button>
-      <button class="tab-button" data-tab="nutrition">Nutrition</button>
-    </nav>
-
-    <main class="container">
-      <section id="dashboard" class="tab-content active">
-        <div class="cards-grid">
-          <div class="card" id="sport-summary-card">
-            <h2>Sport - Semaine en cours</h2>
-            <p class="stat" id="sport-summary-text">0 séance · 0 min · Charge 0</p>
-          </div>
-          <div class="card" id="shoulder-card">
-            <h2>Épaule</h2>
-            <p class="stat" id="shoulder-text">0 séance sensible (0%)</p>
-            <p class="comment" id="shoulder-comment">Rien d'alarmant</p>
-          </div>
-          <div class="card" id="nutrition-card">
-            <h2>Nutrition - Moyenne hebdo</h2>
-            <p class="stat" id="nutrition-text">0 / 5</p>
-            <p class="comment">Objectif &gt; 3,5</p>
-          </div>
+  <main class="container">
+    <section id="dashboard" class="tab-content active">
+      <div class="cards-grid">
+        <div class="card" id="sport-summary-card">
+          <h2>Sport - Semaine en cours</h2>
+          <p class="stat" id="sport-summary-text">0 séance · 0 min · Charge 0</p>
         </div>
-
-        <div class="charts-grid">
-          <div class="card">
-            <h3>Minutes par type (semaine)</h3>
-            <canvas id="sportChart" height="140"></canvas>
-          </div>
-          <div class="card">
-            <h3>Qualité nutrition (7 derniers jours)</h3>
-            <canvas id="nutritionChart" height="140"></canvas>
-          </div>
+        <div class="card" id="shoulder-card">
+          <h2>Épaule</h2>
+          <p class="stat" id="shoulder-text">0 séance sensible (0%)</p>
+          <p class="comment" id="shoulder-comment">Rien d'alarmant</p>
         </div>
-      </section>
-
-      <section id="sport" class="tab-content">
-        <div class="section-header">
-          <h2>Sport</h2>
-          <p id="sport-week-summary">0 séance cette semaine · 0 minutes</p>
+        <div class="card" id="nutrition-card">
+          <h2>Nutrition - Moyenne hebdo</h2>
+          <p class="stat" id="nutrition-text">0 / 5</p>
+          <p class="comment">Objectif &gt; 3,5</p>
         </div>
-        <form id="sport-form" class="form-card">
-          <div class="form-grid">
-            <label>
-              Date*
-              <input type="date" name="date" required>
-            </label>
-            <label>
-              Type*
-              <select name="type" required>
-                <option value="">Choisir</option>
-                <option value="natation">Natation</option>
-                <option value="kine">Kiné</option>
-                <option value="maison">Maison</option>
-                <option value="running">Running</option>
-                <option value="foot">Foot</option>
-                <option value="padel">Padel</option>
-                <option value="autre">Autre</option>
-              </select>
-            </label>
-            <label>
-              Durée (minutes)*
-              <input type="number" name="dureeMinutes" min="1" required>
-            </label>
-            <label>
-              Intensité (1-5)*
-              <input type="number" name="intensite" min="1" max="5" required>
-            </label>
-            <label>
-              Épaule*
-              <select name="epaule" required>
-                <option value="">Choisir</option>
-                <option value="OK">OK</option>
-                <option value="gene">Gêne</option>
-                <option value="douleur">Douleur</option>
-              </select>
-            </label>
-            <label>
-              Commentaire
-              <textarea name="commentaire" rows="2" placeholder="Optionnel"></textarea>
-            </label>
-          </div>
-          <button type="submit" class="primary">Ajouter la séance</button>
-        </form>
+      </div>
 
-        <div class="list-card">
-          <h3>10 dernières séances</h3>
-          <div id="sport-list" class="list"></div>
+      <div class="charts-grid">
+        <div class="card">
+          <h3>Minutes par type (semaine)</h3>
+          <canvas id="sportChart" height="140"></canvas>
         </div>
-      </section>
+        <div class="card">
+          <h3>Qualité nutrition (7 derniers jours)</h3>
+          <canvas id="nutritionChart" height="140"></canvas>
+        </div>
+      </div>
+    </section>
 
-      <section id="nutrition" class="tab-content">
-        <div class="section-header">
-          <h2>Nutrition</h2>
-          <p id="nutrition-week-summary">Moyenne semaine: 0 / 5</p>
+    <section id="sport" class="tab-content">
+      <div class="section-header">
+        <h2>Sport</h2>
+        <p id="sport-week-summary">0 séance cette semaine · 0 minutes</p>
+      </div>
+      <form id="sport-form" class="form-card">
+        <div class="form-grid">
+          <label>
+            Date*
+            <input type="date" name="date" required>
+          </label>
+          <label>
+            Type*
+            <select name="type" required>
+              <option value="">Choisir</option>
+              <option value="natation">Natation</option>
+              <option value="kine">Kiné</option>
+              <option value="maison">Maison</option>
+              <option value="running">Running</option>
+              <option value="foot">Foot</option>
+              <option value="padel">Padel</option>
+              <option value="autre">Autre</option>
+            </select>
+          </label>
+          <label>
+            Durée (minutes)*
+            <input type="number" name="dureeMinutes" min="1" required>
+          </label>
+          <label>
+            Intensité (1-5)*
+            <input type="number" name="intensite" min="1" max="5" required>
+          </label>
+          <label>
+            Épaule*
+            <select name="epaule" required>
+              <option value="">Choisir</option>
+              <option value="OK">OK</option>
+              <option value="gene">Gêne</option>
+              <option value="douleur">Douleur</option>
+            </select>
+          </label>
+          <label>
+            Commentaire
+            <textarea name="commentaire" rows="2" placeholder="Optionnel"></textarea>
+          </label>
         </div>
-        <form id="meal-form" class="form-card">
-          <div class="form-grid">
-            <label>
-              Date &amp; heure*
-              <input type="datetime-local" name="dateTime" required>
-            </label>
-            <label>
-              Type de repas*
-              <select name="typeRepas" required>
-                <option value="">Choisir</option>
-                <option value="petit_dej">Petit-déjeuner</option>
-                <option value="dejeuner">Déjeuner</option>
-                <option value="diner">Dîner</option>
-                <option value="snack">Snack</option>
-              </select>
-            </label>
-            <label>
-              Note (1-5)*
-              <input type="number" name="noteQualite" min="1" max="5" required>
-            </label>
-            <label>
-              Commentaire
-              <textarea name="commentaire" rows="2" placeholder="Optionnel"></textarea>
-            </label>
-          </div>
-          <button type="submit" class="primary">Ajouter le repas</button>
-        </form>
+        <button type="submit" class="primary">Ajouter la séance</button>
+      </form>
 
-        <div class="list-card">
-          <h3>20 derniers repas</h3>
-          <div id="meal-list" class="list"></div>
+      <div class="list-card">
+        <h3>10 dernières séances</h3>
+        <div id="sport-list" class="list"></div>
+      </div>
+    </section>
+
+    <section id="nutrition" class="tab-content">
+      <div class="section-header">
+        <h2>Nutrition</h2>
+        <p id="nutrition-week-summary">Moyenne semaine: 0 / 5</p>
+      </div>
+      <form id="meal-form" class="form-card">
+        <div class="form-grid">
+          <label>
+            Date*
+            <input type="date" name="dateTime" required>
+          </label>
+          <label>
+            Type de repas*
+            <select name="typeRepas" required>
+              <option value="">Choisir</option>
+              <option value="petit_dej">Petit-déjeuner</option>
+              <option value="dejeuner">Déjeuner</option>
+              <option value="diner">Dîner</option>
+              <option value="snack">Snack</option>
+            </select>
+          </label>
+          <label>
+            Note (1-5)*
+            <input type="number" name="noteQualite" min="1" max="5" required>
+          </label>
+          <label>
+            Commentaire
+            <textarea name="commentaire" rows="2" placeholder="Optionnel"></textarea>
+          </label>
         </div>
-      </section>
-    </main>
-  </div>
+        <button type="submit" class="primary">Ajouter le repas</button>
+      </form>
+
+      <div class="list-card">
+        <h3>20 derniers repas</h3>
+        <div id="meal-list" class="list"></div>
+      </div>
+    </section>
+  </main>
 
   <footer class="app-footer">
-    <p>Synchronisation sécurisée via Supabase · Front-end HTML/CSS/JS</p>
+    <p>Sauvegarde locale uniquement · Pas de compte · Reste simple 🚀</p>
   </footer>
 
   <script src="app.js"></script>
